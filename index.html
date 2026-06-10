@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Poster Crew — Paravita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg:#f5f5f7; --surface:#ffffff; --surface2:#f0f0f4; --border:rgba(0,0,0,0.08);
+  --border2:rgba(0,0,0,0.14); --text:#111111; --muted:#666; --muted2:#999;
+  --accent:#1a1a2e; --green:#16a34a; --red:#dc2626; --blue:#2563eb; --amber:#d97706;
+  --radius:10px; --radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;}
+header{border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;background:var(--bg);z-index:50;}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:-0.02em;color:var(--text);display:flex;align-items:center;gap:10px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:#1a1a2e;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.btn{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);border-radius:var(--radius);padding:8px 16px;background:transparent;color:var(--text);transition:all 0.15s;}
+.btn:hover{background:var(--surface2);border-color:rgba(255,255,255,0.25);}
+.btn-accent{background:#1a1a2e;color:#fff;border-color:#1a1a2e;}
+.btn-accent:hover{background:#2d2d4e;border-color:#2d2d4e;}
+.container{max-width:1280px;margin:0 auto;padding:32px 32px 80px;}
+.metrics-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px;}
+@media(max-width:900px){.metrics-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.metrics-grid{grid-template-columns:1fr 1fr;}}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;}
+.metric-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.metric-val{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:var(--text);line-height:1;}
+.metric-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+.metric-progress{height:3px;background:var(--surface2);border-radius:2px;margin-top:10px;}
+.metric-progress-fill{height:3px;border-radius:2px;background:#1a1a2e;transition:width 0.4s;}
+.map-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:24px;overflow:hidden;}
+.map-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:500;letter-spacing:-0.01em;}
+.map-legend{display:flex;gap:16px;flex-wrap:wrap;}
+.map-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+#mapSvg{width:100%;display:block;}
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
+@media(max-width:800px){.charts-row{grid-template-columns:1fr;}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;}
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.table-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;width:220px;}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;width:100%;}
+.search-box input::placeholder{color:var(--muted2);}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:12px 14px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap;}
+thead th:hover{color:var(--text);}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover td{background:var(--surface2);}
+tbody td{padding:11px 14px;vertical-align:middle;}
+.crew-name{font-weight:500;color:var(--text);}
+.city-tag{font-size:12px;color:var(--muted);}
+.territory-row td{background:rgba(0,0,0,0.03)!important;padding:9px 14px!important;}
+.city-subrow td{background:rgba(0,0,0,0.015)!important;padding:5px 14px 5px 28px!important;}
+.territory-row:hover td,.city-subrow:hover td{background:rgba(0,0,0,0.05)!important;}
+.poster-cell{min-width:100px;}
+.poster-nums{font-size:12px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
+.poster-nums span:first-child{font-weight:500;color:var(--text);}
+.bar-track{height:4px;background:var(--surface2);border-radius:2px;}
+.bar-fill{height:4px;border-radius:2px;background:#1a1a2e;transition:width 0.4s;}
+.streets-cell{max-width:160px;}
+.street-pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;margin:2px 2px 2px 0;}
+.pay-badge{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:3px 9px;border-radius:20px;}
+.pay-paid{background:#dcfce7;color:#16a34a;}
+.pay-unpaid{background:#fee2e2;color:#dc2626;}
+.pay-partial{background:#fef3c7;color:#d97706;}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;padding:5px 8px;font-size:12px;transition:all 0.15s;}
+.icon-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface2);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:22px;color:var(--text);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+.form-group input,.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:9px 12px;outline:none;transition:border 0.15s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select option{background:var(--surface2);}
+.streets-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:20px;}
+.street-tag-edit{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 9px;border-radius:20px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;cursor:pointer;}
+.street-tag-edit:hover{background:#dbeafe;}
+.street-input-row{display:flex;gap:8px;}
+.street-input-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;outline:none;}
+.street-input-row input:focus{border-color:var(--accent);}
+.modal-actions{display:flex;gap:10px;margin-top:22px;}
+.modal-actions .btn{flex:1;text-align:center;}
+.divider{height:1px;background:var(--border);margin:18px 0;}
+.empty-row td{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:#e8e8ec;}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 20px;font-size:13px;color:var(--text);opacity:0;transition:all 0.25s;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.pt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;}
+.pt-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.pt-table{width:100%;border-collapse:collapse;}
+.pt-table th{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;padding:11px 14px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;}
+.pt-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;color:var(--text);}
+.pt-table tr:last-child td{border-bottom:none;}
+.pt-table tr:hover td{background:var(--surface2);}
+.pt-territory-row td{background:rgba(0,0,0,0.03)!important;padding:8px 14px!important;}
+.pt-territory-row:hover td{background:rgba(0,0,0,0.05)!important;}
+.cb-wrap{display:flex;align-items:center;justify-content:center;}
+.cb-wrap input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1a1a2e;}
+.paypal-input{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);width:160px;outline:none;}
+.paypal-input:focus{border-color:#1a1a2e;}
+.tag-shipped{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px;background:#dcfce7;color:#16a34a;}
+.tag-pending{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px;background:#fee2e2;color:#dc2626;}
+.tag-na{display:inline-block;font-size:11px;padding:2px 8px;border-radius:12px;background:#f3f4f6;color:#9ca3af;}
+.pt-summary{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+.pt-summary span b{color:var(--text);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>Paravita · Poster Crew</div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="lastSaved">Saved locally</span></div>
+    <button class="btn btn-accent" onclick="openAdd()">+ Add crew</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="metrics-grid" id="metricsGrid"></div>
+
+  <div class="map-card">
+    <div class="map-header">
+      <span class="card-title">Crew worldwide</span>
+      <div class="map-legend" id="mapLegend"></div>
+    </div>
+    <div id="mapContainer" style="height:420px;width:100%;"></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="card-title">Poster progress</div>
+      <div style="position:relative;margin-top:14px;height:210px"><canvas id="posterChart" role="img" aria-label="Poster progress per crew member"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Payment status</div>
+      <div id="payLegend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:#888"></div>
+      <div style="position:relative;height:160px;margin-top:8px"><canvas id="payChart" role="img" aria-label="Payment status breakdown"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PAYMENT TRACKER -->
+  <div class="pt-card">
+    <div class="pt-header">
+      <span class="card-title">Payment &amp; Shipment Tracker</span>
+      <div class="pt-summary" id="ptSummary"></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="pt-table" id="ptTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone / Number</th>
+            <th>City</th>
+            <th>Posters</th>
+            <th>District Assigned</th>
+            <th>PayPal Details</th>
+            <th>Pre-Activation Payment</th>
+            <th>Post-Activation Payment</th>
+            <th>Commission</th>
+            <th>Budget Allocated</th>
+            <th>Budget Paid</th>
+            <th>Shipment Address</th>
+            <th>Shipment Made</th>
+          </tr>
+        </thead>
+        <tbody id="ptBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Edit crew member</div>
+    <div class="form-row">
+      <div class="form-group"><label>Name / Handle</label><input id="mName" type="text" placeholder="e.g. Sophie"/></div>
+      <div class="form-group"><label>Payment</label>
+        <select id="mPay"><option value="unpaid">Unpaid</option><option value="paid">Paid</option><option value="partial">Partial</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input id="mCity" type="text" placeholder="e.g. Amsterdam"/></div>
+      <div class="form-group"><label>Country / State</label><input id="mCountry" type="text" placeholder="e.g. Netherlands"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Posters allocated</label><input id="mPosters" type="number" min="0" placeholder="625"/></div>
+      <div class="form-group"><label>Posters given out</label><input id="mGiven" type="number" min="0" placeholder="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Posters put up</label><input id="mDone" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group"><label>Commission owed ($)</label><input id="mCommission" type="number" min="0" placeholder="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Budget allocated ($)</label><input id="mBudgetAlloc" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group"><label>Budget paid out ($)</label><input id="mBudgetPaid" type="number" min="0" placeholder="0"/></div>
+    </div>
+    <div class="form-group"><label>Referred by</label><input id="mReferredBy" type="text" placeholder="Who brought them in?"/></div>
+    <div class="form-group"><label>Instagram / Contact</label><input id="mContact" type="text" placeholder="@handle or email"/></div>
+    <div class="divider"></div>
+    <div class="form-group">
+      <label>Assigned streets</label>
+      <div class="streets-tags" id="streetTags"></div>
+      <div class="street-input-row">
+        <input id="streetInput" type="text" placeholder="Type a street and press Enter..." onkeydown="if(event.key==='Enter'){addStreet();event.preventDefault();}"/>
+        <button class="btn" onclick="addStreet()">Add</button>
+      </div>
+    </div>
+    <div class="form-group"><label>Notes</label><input id="mNotes" type="text" placeholder="Any context..."/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveModal()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOTAL_POSTERS = 10000;
+const TOTAL_BUDGET  = 20000;
+
+const TERRITORY_COLORS = {
+  'England':'#2563eb','Netherlands':'#7c3aed','Germany':'#dc2626',
+  'Portugal':'#059669','Spain':'#ea580c','USA':'#1a1a2e','Texas':'#1a1a2e','Canada':'#db2777'
+};
+
+const CITY_COORDS = {
+  'Amsterdam':[52.37,4.90],'London':[51.51,-0.12],'Berlin':[52.52,13.40],
+  'Austin':[30.26,-97.74],'Lisbon':[38.72,-9.14],'New York':[40.73,-73.94],
+  'Los Angeles':[34.05,-118.24],'San Francisco':[37.78,-122.41],
+  'Long Island':[40.78,-73.64],'Barcelona':[41.39,2.15],'Hackney':[51.55,-0.06],
+  'Toronto':[43.65,-79.38],'Paris':[48.85,2.35],'Stockholm':[59.33,18.07],
+  'Madrid':[40.42,-3.70],'Rome':[41.90,12.50],'Chicago':[41.88,-87.63],
+  'Miami':[25.77,-80.19],'Seattle':[47.61,-122.33],'Boston':[42.36,-71.06]
+};
+
+const DEFAULT_CREW = [
+  {id:1, name:'Sophie',          city:'Amsterdam',    country:'Netherlands', lat:52.37, lng:4.90,   posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Albert Cuyp area','Ferdinand Bolstraat'],contact:'',notes:''},
+  {id:2, name:'Dookieman',       city:'London',       country:'England',     lat:51.51, lng:-0.12,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Brick Lane','Redchurch Street'],contact:'',notes:''},
+  {id:3, name:'Hannarchy',       city:'Berlin',       country:'Germany',     lat:52.52, lng:13.40,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Oranienstraße','Görlitzer area','Weserstraße','Reuterkiez'],contact:'',notes:''},
+  {id:4, name:'KC',              city:'Austin',       country:'Texas',       lat:30.26, lng:-97.74, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['South Congress Ave'],contact:'',notes:''},
+  {id:5, name:'Christina',       city:'Austin',       country:'Texas',       lat:30.30, lng:-97.78, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['East 6th','Cesar Chavez corridor'],contact:'',notes:''},
+  {id:6, name:'Evan Fogarty',    city:'Lisbon',       country:'Portugal',    lat:38.72, lng:-9.14,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Rua Augusta','Alfama'],contact:'@minte.skates',notes:''},
+  {id:7, name:'Drue Smith',      city:'Amsterdam',    country:'Netherlands', lat:52.35, lng:4.92,   posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Elandsgracht','Westerstraat'],contact:'',notes:''},
+  {id:8, name:'RETROPXSSY',      city:'Hackney',      country:'England',     lat:51.55, lng:-0.06,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Kingsland Road','Dalston Lane'],contact:'',notes:''},
+  {id:9, name:'Dave',            city:'Barcelona',    country:'Spain',       lat:41.39, lng:2.15,   posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['MACBA','Plaça dels Àngels','Joaquín Costa','Plaça del Sol','Carrer de Verdi'],contact:'',notes:''},
+  {id:10,name:'Allan Calderon',  city:'San Francisco',country:'USA',         lat:37.78, lng:-122.41,posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Valencia St','16th & 18th corridors','Hayes St','Octavia area'],contact:'',notes:''},
+  {id:11,name:'Guershon Villiere',city:'New York',    country:'USA',         lat:40.73, lng:-73.94, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Bedford Ave','North 6th / North 7th','St. Marks Place','Avenue A'],contact:'@the3kid6',notes:''},
+  {id:12,name:'Justinsaitta',    city:'Long Island',  country:'USA',         lat:40.78, lng:-73.64, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:[],contact:'',notes:''},
+  {id:13,name:'Cristin Voins',   city:'Amsterdam',    country:'Netherlands', lat:52.36, lng:4.91,   posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Albert Cuyp area','Elandsgracht'],contact:'',notes:''},
+  {id:14,name:'LA Skate Co',     city:'Los Angeles',  country:'USA',         lat:34.05, lng:-118.24,posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Sunset Blvd','Hyperion Ave','Abbot Kinney Blvd','Rose Ave'],contact:'',notes:''},
+  {id:15,name:'hairymuffinman',  city:'London',       country:'England',     lat:51.50, lng:-0.09,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Brick Lane','Redchurch Street'],contact:'',notes:''},
+  {id:16,name:'Not Eevee',       city:'London',       country:'England',     lat:51.52, lng:-0.08,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Kingsland Road','Dalston Lane'],contact:'',notes:''},
+  {id:21,name:'Ewen',              city:'London',       country:'England',     lat:51.49, lng:-0.11,  posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Brick Lane','Redchurch Street'],contact:'',notes:''},
+  {id:17,name:'Ben',              city:'Toronto',      country:'Canada',      lat:43.65, lng:-79.38, posters:400,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['Ossington Ave','Dundas St W','Augusta Ave','Baldwin St','College St'],contact:'',notes:''},
+  {id:18,name:'Montreal Crew',   city:'Montreal',     country:'Canada',      lat:45.50, lng:-73.57, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['St-Laurent Blvd','Bernard Ave','Mont-Royal Ave','St-Denis St'],contact:'',notes:''},
+  {id:19,name:'Raph',             city:'Quebec City',  country:'Canada',      lat:46.81, lng:-71.21, posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:[],contact:'',notes:''},
+  {id:20,name:'SOL',               city:'Barcelona',    country:'Spain',       lat:41.38, lng:2.17,   posters:625,given:0,done:0,pay:'unpaid',commission:0,budgetAlloc:0,budgetPaid:0,referredBy:'',streets:['MACBA','Plaça dels Àngels','Joaquín Costa','Plaça del Sol','Carrer de Verdi'],contact:'',notes:''},
+];
+
+let crew = [];
+let editId = null;
+let tempStreets = [];
+let sortKey = 'name';
+let sortDir = 1;
+let posterChart = null;
+let payChart = null;
+
+function loadData(){
+  try {
+    const saved = localStorage.getItem('paravita_crew');
+    crew = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_CREW));
+  } catch(e){ crew = JSON.parse(JSON.stringify(DEFAULT_CREW)); }
+}
+
+function saveData(){
+  localStorage.setItem('paravita_crew', JSON.stringify(crew));
+  const now = new Date();
+  document.getElementById('lastSaved').textContent = 'Saved ' + now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  showToast('Changes saved');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function renderMetrics(){
+  const total        = crew.length;
+  const totalGiven   = crew.reduce((a,c)=>a+(c.given||0),0);
+  const totalDone    = crew.reduce((a,c)=>a+c.done,0);
+  const pctGiven     = Math.round(totalGiven/TOTAL_POSTERS*100);
+  const pctDone      = totalGiven>0?Math.round(totalDone/totalGiven*100):0;
+  const paid         = crew.filter(c=>c.pay==='paid').length;
+  const totalComm    = crew.reduce((a,c)=>a+(c.commission||0),0);
+  const totalAllocated = crew.reduce((a,c)=>a+(c.budgetAlloc||0),0);
+  const totalSpent   = crew.reduce((a,c)=>a+(c.budgetPaid||0),0);
+  const budgetLeft   = TOTAL_BUDGET - totalSpent;
+  const pctBudget    = Math.round(totalSpent/TOTAL_BUDGET*100);
+  const cities       = new Set(crew.filter(c=>c.city).map(c=>c.city)).size;
+
+  document.getElementById('metricsGrid').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total posters</div>
+      <div class="metric-val">${TOTAL_POSTERS.toLocaleString()}</div>
+      <div class="metric-sub">${total} crew · ${cities} cities</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Posters given out</div>
+      <div class="metric-val">${totalGiven.toLocaleString()}</div>
+      <div class="metric-sub">${pctGiven}% of total distributed</div>
+      <div class="metric-progress"><div class="metric-progress-fill" style="width:${pctGiven}%"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Posters put up</div>
+      <div class="metric-val">${totalDone.toLocaleString()}</div>
+      <div class="metric-sub">${pctDone}% of given posted</div>
+      <div class="metric-progress"><div class="metric-progress-fill" style="width:${pctDone}%"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Budget</div>
+      <div class="metric-val">$${TOTAL_BUDGET.toLocaleString()}</div>
+      <div class="metric-sub">$${totalAllocated.toLocaleString()} allocated · $${totalSpent.toLocaleString()} paid</div>
+      <div class="metric-progress"><div class="metric-progress-fill" style="width:${pctBudget}%;background:${pctBudget>85?'#dc2626':'#1a1a2e'}"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Budget remaining</div>
+      <div class="metric-val" style="color:${budgetLeft<2000?'#dc2626':budgetLeft<5000?'#d97706':'#16a34a'}">$${budgetLeft.toLocaleString()}</div>
+      <div class="metric-sub">Commission: $${totalComm.toLocaleString()} owed</div>
+    </div>`;
+}
+
+function buildRow(c){
+  const pctGiven  = c.posters>0 ? Math.round((c.given||0)/c.posters*100) : 0;
+  const pctDone   = (c.given||0)>0 ? Math.round(c.done/(c.given||0)*100) : 0;
+  const payClass  = {paid:'pay-paid',unpaid:'pay-unpaid',partial:'pay-partial'}[c.pay];
+  const payLabel  = {paid:'Paid',unpaid:'Unpaid',partial:'Partial'}[c.pay];
+  const streets   = c.streets.length ? c.streets.map(s=>`<span class="street-pill">${s}</span>`).join('') : '<span style="color:#555;font-size:12px">—</span>';
+  const commCell  = c.commission>0 ? `<span style="color:#1a1a2e;font-weight:600">$${c.commission}</span>${c.referredBy?`<div style="font-size:10px;color:#555">via ${c.referredBy}</div>`:''}` : '<span style="color:#555;font-size:12px">—</span>';
+  const bAlloc    = c.budgetAlloc||0;
+  const bPaid     = c.budgetPaid||0;
+  const budgetCell= bAlloc>0 ? `<div style="font-size:12px"><span style="color:#1a1a2e;font-weight:600">$${bAlloc.toLocaleString()}</span></div><div style="font-size:10px;color:#555">$${bPaid.toLocaleString()} paid</div>` : '<span style="color:#555;font-size:12px">—</span>';
+  return `<tr>
+    <td><div class="crew-name">${c.name}</div>${c.contact?`<div style="font-size:11px;color:#555;margin-top:2px">${c.contact}</div>`:''}</td>
+    <td><div class="city-tag">${c.city||'—'}</div><div style="font-size:11px;color:#555">${c.country||''}</div></td>
+    <td style="font-weight:600;color:#1a1a2e">${c.posters.toLocaleString()}</td>
+    <td class="poster-cell">
+      <div class="poster-nums"><span>${(c.given||0).toLocaleString()}</span><span>${pctGiven}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pctGiven}%;background:#2563eb"></div></div>
+    </td>
+    <td class="poster-cell">
+      <div class="poster-nums"><span>${c.done.toLocaleString()}</span><span>${pctDone}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pctDone}%"></div></div>
+    </td>
+    <td class="streets-cell">${streets}</td>
+    <td><span class="pay-badge ${payClass}">${payLabel}</span></td>
+    <td>${commCell}</td>
+    <td>${budgetCell}</td>
+    <td><button class="icon-btn" onclick="openEdit(${c.id})">✎</button></td>
+  </tr>`;
+}
+
+function renderTable(){
+  const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  let filtered = crew.filter(c => !q || c.name.toLowerCase().includes(q) || (c.city||'').toLowerCase().includes(q) || (c.country||'').toLowerCase().includes(q));
+  const tb = document.getElementById('crewBody');
+
+  if(!filtered.length){
+    tb.innerHTML = '<tr class="empty-row"><td colspan="10">No crew members found</td></tr>';
+    return;
+  }
+
+  // Group view when not searching
+  if(!q){
+    const byCountry = {};
+    filtered.forEach(c=>{
+      const ctry = c.country||'Unknown';
+      if(!byCountry[ctry]) byCountry[ctry] = {};
+      const city = c.city||'Unknown';
+      if(!byCountry[ctry][city]) byCountry[ctry][city] = [];
+      byCountry[ctry][city].push(c);
+    });
+
+    let html = '';
+    Object.keys(byCountry).sort().forEach(country=>{
+      const col = TERRITORY_COLORS[country]||'#888';
+      const allInCountry = Object.values(byCountry[country]).flat();
+      const tP = allInCountry.reduce((a,c)=>a+c.posters,0);
+      const tG = allInCountry.reduce((a,c)=>a+(c.given||0),0);
+      const tD = allInCountry.reduce((a,c)=>a+c.done,0);
+      html += `<tr class="territory-row">
+        <td colspan="10">
+          <span style="display:inline-flex;align-items:center;gap:10px">
+            <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0"></span>
+            <span style="font-size:12px;font-weight:600;color:${col};text-transform:uppercase;letter-spacing:0.07em">${country}</span>
+            <span style="font-size:11px;color:#555">${allInCountry.length} skater${allInCountry.length!==1?'s':''} · ${tP.toLocaleString()} allocated · ${tG.toLocaleString()} given · ${tD.toLocaleString()} up</span>
+          </span>
+        </td>
+      </tr>`;
+      const cities = Object.keys(byCountry[country]).sort();
+      cities.forEach(city=>{
+        if(cities.length > 1){
+          html += `<tr class="city-subrow">
+            <td colspan="10"><span style="font-size:11px;color:#555;font-style:italic">${city}</span></td>
+          </tr>`;
+        }
+        byCountry[country][city].forEach(c=>{ html += buildRow(c); });
+      });
+    });
+    tb.innerHTML = html;
+    return;
+  }
+
+  // Flat view when searching/sorting
+  filtered.sort((a,b)=>{
+    let av=a[sortKey]||'', bv=b[sortKey]||'';
+    if(typeof av==='number') return (av-bv)*sortDir;
+    return av.toString().localeCompare(bv.toString())*sortDir;
+  });
+  tb.innerHTML = filtered.map(c=>buildRow(c)).join('');
+}
+
+function sortBy(key){
+  if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=1;}
+  renderTable();
+}
+
+function renderCharts(){
+  const top = [...crew].sort((a,b)=>b.posters-a.posters).slice(0,12);
+  const gc = 'rgba(0,0,0,0.06)', tc = '#999';
+
+  if(posterChart) posterChart.destroy();
+  posterChart = new Chart(document.getElementById('posterChart'),{
+    type:'bar',
+    data:{
+      labels:top.map(c=>c.name.split(' ')[0].slice(0,10)),
+      datasets:[
+        {label:'Allocated',data:top.map(c=>c.posters),backgroundColor:'rgba(26,26,46,0.08)',borderRadius:3},
+        {label:'Given',data:top.map(c=>c.given||0),backgroundColor:'#60a5fa',borderRadius:3},
+        {label:'Put Up',data:top.map(c=>c.done),backgroundColor:'#e8ff47',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:tc,font:{size:10},maxRotation:35},grid:{color:gc}},
+              y:{ticks:{color:tc,font:{size:10}},grid:{color:gc},beginAtZero:true}}}
+  });
+
+  const paidN=crew.filter(c=>c.pay==='paid').length;
+  const unpaidN=crew.filter(c=>c.pay==='unpaid').length;
+  const partialN=crew.filter(c=>c.pay==='partial').length;
+  if(payChart) payChart.destroy();
+  payChart = new Chart(document.getElementById('payChart'),{
+    type:'doughnut',
+    data:{labels:['Paid','Unpaid','Partial'],datasets:[{data:[paidN,unpaidN,partialN],backgroundColor:['#16a34a','#dc2626','#d97706'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
+  });
+  document.getElementById('payLegend').innerHTML=[
+    {l:`Paid ${paidN}`,c:'#16a34a'},{l:`Unpaid ${unpaidN}`,c:'#dc2626'},{l:`Partial ${partialN}`,c:'#d97706'}
+  ].map(x=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:2px;background:${x.c}"></span>${x.l}</span>`).join('');
+}
+
+function renderMap(){
+  const TERRITORY_COLORS_HEX = {
+    'England':'#2563eb','Netherlands':'#7c3aed','Germany':'#dc2626',
+    'Portugal':'#059669','Spain':'#ea580c','USA':'#1a1a2e',
+    'Texas':'#1a1a2e','Canada':'#db2777'
+  };
+
+  // Destroy existing map if reinitialising
+  if(window._leafletMap){ window._leafletMap.remove(); window._leafletMap = null; }
+
+  const map = L.map('mapContainer', {
+    center: [48, -20],
+    zoom: 4,
+    minZoom: 2,
+    maxZoom: 10,
+    zoomControl: true,
+    scrollWheelZoom: true,
+  });
+  window._leafletMap = map;
+
+  // Clean light tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Group by city
+  const cityGroups = {};
+  crew.filter(c=>c.lat&&c.lng&&c.city).forEach(c=>{
+    if(!cityGroups[c.city]) cityGroups[c.city]={city:c.city,lat:c.lat,lng:c.lng,names:[],country:c.country};
+    cityGroups[c.city].names.push(c.name);
+  });
+
+  Object.values(cityGroups).forEach(g=>{
+    const col   = TERRITORY_COLORS_HEX[g.country]||'#1a1a2e';
+    const count = g.names.length;
+    const label = count>1 ? `${g.city} ×${count}` : g.city;
+    const names = g.names.join(', ');
+
+    // Custom div icon — colored dot + city label
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <div style="width:10px;height:10px;border-radius:50%;background:${col};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.25);flex-shrink:0"></div>
+        <div style="background:rgba(255,255,255,0.92);border:1px solid rgba(0,0,0,0.12);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;color:${col};box-shadow:0 1px 3px rgba(0,0,0,0.1);backdrop-filter:blur(4px)">${label}</div>
+      </div>`,
+      iconAnchor: [5, 5],
+    });
+
+    const marker = L.marker([g.lat, g.lng], {icon}).addTo(map);
+    marker.bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:160px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:${col}">${g.city}</div>
+        <div style="font-size:12px;color:#666;margin-bottom:4px">${g.country}</div>
+        <div style="font-size:12px;color:#333"><b>${count}</b> skater${count!==1?'s':''}: ${names}</div>
+      </div>
+    `, {maxWidth: 240});
+  });
+
+  // Update header legend
+  const allCountries = [...new Set(crew.filter(c=>c.country).map(c=>c.country))];
+  document.getElementById('mapLegend').innerHTML = allCountries.map(ctry=>{
+    const col = TERRITORY_COLORS_HEX[ctry]||'#888';
+    return `<div class="map-legend-item"><div class="legend-dot" style="background:${col}"></div>${ctry}</div>`;
+  }).join('');
+}
+
+function openEdit(id){
+  const c = crew.find(x=>x.id===id);
+  editId = id; tempStreets = [...c.streets];
+  document.getElementById('modalTitle').textContent = c.name;
+  document.getElementById('mName').value    = c.name;
+  document.getElementById('mCity').value    = c.city;
+  document.getElementById('mCountry').value = c.country;
+  document.getElementById('mPosters').value = c.posters;
+  document.getElementById('mGiven').value   = c.given||0;
+  document.getElementById('mDone').value    = c.done;
+  document.getElementById('mPay').value     = c.pay;
+  document.getElementById('mCommission').value = c.commission||0;
+  document.getElementById('mBudgetAlloc').value= c.budgetAlloc||0;
+  document.getElementById('mBudgetPaid').value = c.budgetPaid||0;
+  document.getElementById('mReferredBy').value = c.referredBy||'';
+  document.getElementById('mContact').value = c.contact||'';
+  document.getElementById('mNotes').value   = c.notes||'';
+  renderStreetTags();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openAdd(){
+  editId = null; tempStreets = [];
+  document.getElementById('modalTitle').textContent = 'Add crew member';
+  ['mName','mCity','mCountry','mContact','mNotes','mReferredBy'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mPosters').value    = 625;
+  document.getElementById('mGiven').value      = 0;
+  document.getElementById('mDone').value       = 0;
+  document.getElementById('mPay').value        = 'unpaid';
+  document.getElementById('mCommission').value = 0;
+  document.getElementById('mBudgetAlloc').value= 0;
+  document.getElementById('mBudgetPaid').value = 0;
+  renderStreetTags();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+function addStreet(){
+  const v = document.getElementById('streetInput').value.trim();
+  if(v && !tempStreets.includes(v)){ tempStreets.push(v); renderStreetTags(); document.getElementById('streetInput').value=''; }
+}
+function removeStreet(s){ tempStreets=tempStreets.filter(x=>x!==s); renderStreetTags(); }
+function renderStreetTags(){
+  document.getElementById('streetTags').innerHTML = tempStreets.map(s=>`<span class="street-tag-edit" onclick="removeStreet('${s.replace(/'/g,"\\'")}')"> ${s} ×</span>`).join('');
+}
+
+function saveModal(){
+  const name = document.getElementById('mName').value.trim(); if(!name) return;
+  const city    = document.getElementById('mCity').value.trim();
+  const country = document.getElementById('mCountry').value.trim();
+  const posters = parseInt(document.getElementById('mPosters').value)||625;
+  const given   = Math.min(parseInt(document.getElementById('mGiven').value)||0, posters);
+  const done    = Math.min(parseInt(document.getElementById('mDone').value)||0, given||posters);
+  const pay     = document.getElementById('mPay').value;
+  const commission  = parseFloat(document.getElementById('mCommission').value)||0;
+  const budgetAlloc = parseFloat(document.getElementById('mBudgetAlloc').value)||0;
+  const budgetPaid  = parseFloat(document.getElementById('mBudgetPaid').value)||0;
+  const referredBy  = document.getElementById('mReferredBy').value.trim();
+  const contact     = document.getElementById('mContact').value.trim();
+  const notes       = document.getElementById('mNotes').value.trim();
+  const ll = CITY_COORDS[city]||[0,0];
+
+  if(editId){
+    const c = crew.find(x=>x.id===editId);
+    Object.assign(c,{name,city,country,posters,given,done,pay,commission,budgetAlloc,budgetPaid,referredBy,streets:tempStreets,contact,notes,lat:ll[0]||c.lat,lng:ll[1]||c.lng});
+  } else {
+    crew.push({id:Date.now(),name,city,country,lat:ll[0],lng:ll[1],posters,given,done,pay,commission,budgetAlloc,budgetPaid,referredBy,streets:tempStreets,contact,notes});
+  }
+  closeModal(); saveData(); renderAll();
+}
+
+document.getElementById('overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+function renderPaymentTracker(){
+  const tb = document.getElementById('ptBody');
+  const byCountry = {};
+  crew.forEach(c=>{
+    const ctry = c.country||'Unknown';
+    if(!byCountry[ctry]) byCountry[ctry]=[];
+    byCountry[ctry].push(c);
+  });
+
+  let html = '';
+  Object.keys(byCountry).sort().forEach(country=>{
+    const col = TERRITORY_COLORS[country]||'#888';
+    const members = byCountry[country];
+    html += `<tr class="pt-territory-row">
+      <td colspan="13">
+        <span style="display:inline-flex;align-items:center;gap:8px">
+          <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0"></span>
+          <span style="font-size:12px;font-weight:600;color:${col};text-transform:uppercase;letter-spacing:0.07em">${country}</span>
+          <span style="font-size:11px;color:#aaa">${members.length} skater${members.length!==1?'s':''}</span>
+        </span>
+      </td>
+    </tr>`;
+    members.forEach(c=>{
+      const district = c.streets.length ? c.streets.slice(0,2).join(', ') : '—';
+      const preChecked  = c.prePayment  ? 'checked' : '';
+      const postChecked = c.postPayment ? 'checked' : '';
+      const addrChecked = c.shipAddress ? 'checked' : '';
+      const shipChecked = c.shipMade    ? 'checked' : '';
+      const preBadge    = c.prePayment  ? '<span class="tag-shipped">Paid</span>'  : '<span class="tag-pending">Pending</span>';
+      const postBadge   = c.postPayment ? '<span class="tag-shipped">Paid</span>'  : '<span class="tag-pending">Pending</span>';
+      const addrBadge   = c.shipAddress ? '<span class="tag-shipped">Confirmed</span>' : '<span class="tag-pending">Pending</span>';
+      const shipBadge   = c.shipMade    ? '<span class="tag-shipped">Sent</span>'  : '<span class="tag-pending">Pending</span>';
+      html += `<tr>
+        <td style="font-weight:500;white-space:nowrap">${c.name}</td>
+        <td><input class="paypal-input" style="width:110px" placeholder="+1 000 000 0000" value="${c.phone||''}" onchange="updateCrewField(${c.id},'phone',this.value)"/></td>
+        <td style="color:var(--muted);white-space:nowrap">${c.city||'—'}</td>
+        <td style="font-weight:600;color:#1a1a2e">${c.posters}</td>
+        <td style="max-width:160px;font-size:12px;color:var(--muted)">${district}</td>
+        <td><input class="paypal-input" placeholder="@paypal or email" value="${c.paypal||''}" onchange="updateCrewField(${c.id},'paypal',this.value)"/></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" ${preChecked} style="width:15px;height:15px;cursor:pointer;accent-color:#1a1a2e;flex-shrink:0" onchange="updateCrewField(${c.id},'prePayment',this.checked)"/>
+            ${preBadge}
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" ${postChecked} style="width:15px;height:15px;cursor:pointer;accent-color:#1a1a2e;flex-shrink:0" onchange="updateCrewField(${c.id},'postPayment',this.checked)"/>
+            ${postBadge}
+          </div>
+        </td>
+        <td>
+          <input class="paypal-input" style="width:80px" placeholder="$0" value="${c.commission>0?'$'+c.commission:''}" onchange="updateCrewField(${c.id},'commission',parseFloat(this.value.replace('$',''))||0)"/>
+        </td>
+        <td>
+          <input class="paypal-input" style="width:80px" placeholder="$0" value="${c.budgetAlloc>0?'$'+c.budgetAlloc:''}" onchange="updateCrewField(${c.id},'budgetAlloc',parseFloat(this.value.replace('$',''))||0)"/>
+        </td>
+        <td>
+          <input class="paypal-input" style="width:80px" placeholder="$0" value="${c.budgetPaid>0?'$'+c.budgetPaid:''}" onchange="updateCrewField(${c.id},'budgetPaid',parseFloat(this.value.replace('$',''))||0)"/>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" ${addrChecked} style="width:15px;height:15px;cursor:pointer;accent-color:#1a1a2e;flex-shrink:0" onchange="updateCrewField(${c.id},'shipAddress',this.checked)"/>
+            ${addrBadge}
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" ${shipChecked} style="width:15px;height:15px;cursor:pointer;accent-color:#1a1a2e;flex-shrink:0" onchange="updateCrewField(${c.id},'shipMade',this.checked)"/>
+            ${shipBadge}
+          </div>
+        </td>
+      </tr>`;
+    });
+  });
+  tb.innerHTML = html;
+
+  // Summary
+  const preDone  = crew.filter(c=>c.prePayment).length;
+  const postDone = crew.filter(c=>c.postPayment).length;
+  const shipAddr = crew.filter(c=>c.shipAddress).length;
+  const shipSent = crew.filter(c=>c.shipMade).length;
+  document.getElementById('ptSummary').innerHTML = `
+    <span>Pre-payment: <b>${preDone}/${crew.length}</b></span>
+    <span>Post-payment: <b>${postDone}/${crew.length}</b></span>
+    <span>Addresses confirmed: <b>${shipAddr}/${crew.length}</b></span>
+    <span>Shipments sent: <b>${shipSent}/${crew.length}</b></span>
+  `;
+}
+
+function updateCrewField(id, field, value){
+  const c = crew.find(x=>x.id===id);
+  if(c){ c[field]=value; saveData(); renderPaymentTracker(); }
+}
+
+function renderAll(){ renderMetrics(); renderTable(); renderCharts(); renderMap(); renderPaymentTracker(); }
+loadData();
+renderAll();
+</script>
+</body>
+</html>
